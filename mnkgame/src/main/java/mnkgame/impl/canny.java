@@ -9,7 +9,7 @@ import mnkgame.MNKGameState;
 import mnkgame.MNKPlayer;
 
 public class struct{
-	short num;
+	int num;
 	MNKCell cell;
 }
 
@@ -41,59 +41,67 @@ public class canny implements MNKPlayer {
 		TIMEOUT = timeoutInSecs;	
 
 	}
-	public short isDraw(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstplayer) {
+	public boolean isDraw(MNKCell[] fc,MNKCell[] mc,MNKCell selected, boolean firstplayer) {
 		if(B.markCell(selected.i,selected.j) == draw) {
-			return (short) 50;  
+			return true;  
 		}
-		return 0;
+		return false;
 	}
-	public short evalGeneral(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstplayer) {
-		short max=0;
-		//......
-		return max;
-	}
-	public MNKCell forced(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstplayer) {
+	public int generalEval(MNKCell[] fc,MNKCell[] mc,MNKCell selected) {
+		
 		//......
 		return ;
 	}
-	public MNKCell enemyForced(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstplayer) {
-		//......
-		return ;
+
+	public MNKCell enemyForced(MNKCell[] fc,MNKCell[] mc,MNKCell selected) {
+		for(MNKCell d:fc) {
+			if(d.i==selected.i+1||d.i==selected.i-1||d.j==selected.j+1||d.j==selected.j-1) {
+				if(B.markCell(d.i,d.j)==yourWin) {
+					return d;
+				}
+			}
+		}
+		return selected;
 	}
-	public Boolean forcing(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstplayer) {
+	public MNKCell forcing(MNKCell[] fc,MNKCell[] mc,MNKCell selected, boolean firstplayer) {
 		//......
 		return ;
 	}
 	
-	public short eval(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstplayer,Boolean isforcing) {
-		short max;
+	public int eval(MNKCell[] fc,MNKCell[] mc,MNKCell selected, boolean firstplayer,boolean isforcing) {
+		int max=0,draw=0;
 		if(B.markCell(selected.i,selected.j) == myWin) {
-			return (short) (100-(2*(short)(firstplayer?1:0))-2*((short)(isforcing?1:0)));  
+			return (int) (100-((int)(!firstplayer?1:0))-(2*(int)(isforcing?1:0)));  
 		}
-		if(forcing(fc,mc,selected,firstplayer)) {
-			MNKCell a=forced(fc,mc,selected,firstplayer);
-			MNKCell b=enemyForced(fc,mc,selected,firstplayer);
+		if(isDraw(fc,mc,selected,firstplayer)) {
+			draw=50;
+		}
+		MNKCell a=forcing(fc,mc,selected,firstplayer);
+		if(a!=selected) {
 			//friendly
-				B.markCell(a.i,a.j);
+			B.markCell(a.i,a.j);
+			MNKCell b=enemyForced(fc,mc,selected);
 				//enemy
 				B.markCell(b.i,b.j);
-				short[]k =new short[(((K*2)-1)^2)];
-				short i=0;
+				int k[fc.length];
+				int i=0;
 				for(MNKCell d : fc) {  
 					k[i]=eval(fc,mc,d,firstplayer,true);
 					i++;
+					
 				}	
 				B.unmarkCell();
 				B.unmarkCell();
 				
-				max=max(k[i]);
-				if(max>=(98-(2*(short)(firstplayer?1:0)))||max==50) {
-					return max;
+				for(int d=0;d<k.length;d++) {
+					if(k[d]>max) {
+				max=k[d];
+					}
 				}
-			
+
 				}
-		max=max(evalGeneral(fc,mc,selected,firstplayer),isDraw(fc,mc,selected,firstplayer));
-		return max;
+		return Math.max(max,draw);
+		
 		
 
 	}
@@ -102,7 +110,7 @@ public class canny implements MNKPlayer {
 	
 	
 	
-	public short deepEval(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstPlayer,Boolean isforcing) {
+	public int deepEval(MNKCell[] fc,MNKCell[] mc,MNKCell selected, Boolean firstPlayer,Boolean isforcing) {
 		boolean keepGoing = true;
 		B.markCell(selected.i,selected.j);
 		for(MNKCell d : fc) {
@@ -112,8 +120,8 @@ public class canny implements MNKPlayer {
 			keepGoing=false;
 			B.markCell(d.i,d.j);
 			for(MNKCell c : fc) {
-				short evaluated=eval(fc,mc,c,true,isforcing);
-				if(evaluated==98||evaluated==100) {
+				int evaluated=eval(fc,mc,c,firstPlayer,isforcing);
+				if(evaluated==100-((int)(!firstPlayer?1:0))||evaluated==98-((int)(!firstPlayer?1:0))) {
 					keepGoing=true;
 					break;
 				}
@@ -121,7 +129,7 @@ public class canny implements MNKPlayer {
 			B.unmarkCell();
 		}
 		B.unmarkCell();
-		return (short) (96-(2*(short)(firstPlayer?1:0)));
+		return (int) (96-((int)(!firstPlayer?1:0)));
 		
 		
 	}
@@ -132,7 +140,9 @@ public class canny implements MNKPlayer {
 		
 	@Override
 	public MNKCell selectCell(MNKCell[] fc, MNKCell[] mc) {
-		struct[] eval=new struct[fc.length];
+		
+		
+		
 		long start = System.currentTimeMillis();
 		//??????????????
 		if(mc.length > 0) {
@@ -143,35 +153,144 @@ public class canny implements MNKPlayer {
 		if(fc.length == 1)
 			return fc[0];
 		
-		// Check whether there is single move win 
-		short j=0;
+		
+		struct[] eval=new struct[fc.length];
+		int i;
+		for(MNKCell d:fc) {
+			eval[i].cell=d;
+			eval[i].num=0;
+			i++;
+		}
+		int j=0;
+		struct max;
+		max.cell=fc[0];
+		max.num=0;
 		for(MNKCell d : fc) {  
 			 if((System.currentTimeMillis()-start)/1000.0 > TIMEOUT*(99.0/100.0)) {
 				 break;
 			 }
-			eval[j].cell=d;
-			eval[j].num =max(eval(fc,mc,d,true,false),eval(fc,mc,d,false,false));
+			 if(eval[j].cell!=d) {throw new NewException("myEval mismatch" );}
+			 
+			 
+			eval[j].num =eval(fc,mc,d,true,false);
+			if(eval[j].num>max.num) {
+				max=eval[j];
+			}
 			j++;
 			}
 		j=0;
-		short tmp;
+		B.markCell(max.cell.i, max.cell.j);
+		
+		
+		struct max2;
+		max2.cell=fc[0];
+		max2.num=0;
 		for(MNKCell d : fc) {  
 			 if((System.currentTimeMillis()-start)/1000.0 > TIMEOUT*(99.0/100.0)) {
 				 break;
 			 }
-			 if(eval[j].cell!=d) {throw new NewException("DeepEval mismatch" );}
-			eval[j].num=max(deepEval(fc,mc,d,true,false),deepEval(fc,mc,d,false,false),eval[j].num);
+			 if(eval[j].cell!=d) {throw new NewException("hisEval mismatch" );}
+			 
+			 
+			eval[j].num =Math.max(eval[j].num, eval(fc,mc,d,false,false));
+			
+			if(eval[j].num>max2.num) {
+				max2=eval[j];
+			}
 			j++;
 			}
 		
+		if(max2.num>max.num) {
+			B.unmarkCell();
+			B.markCell(max2.cell.i, max2.cell.j);
+			int evaluated=eval(fc,mc,max.cell,false,false);
+			if(evaluated>max2.num) {
+				for(int a=0;a<fc.length;a++) {
+					if(eval[a].cell==max.cell) {
+					eval[a].num=evaluated;	
+					}
+				}
+				
+			}
+		}
 		
-		return max(eval.num).cell;
+		B.unmarkCell();
+		
+		int maximum=Math.max(max.num, max2.num);
+		if(maximum<=97) {
+			struct max3;
+			max3.cell=fc[0];
+			max3.num=0;
+			short tmp;
+		for(MNKCell d : fc) {  
+			 if((System.currentTimeMillis()-start)/1000.0 > TIMEOUT*(99.0/100.0)) {
+				 break;
+			 }
+			 if(eval[j].cell!=d) {throw new NewException("myDeepEval mismatch" );}
+			 
+			eval[j].num=Math.max(deepEval(fc,mc,d,true,false),eval[j].num);
+			
+			if(eval[j].num>max3.num) {
+				max3=eval[j];
+			}
+			
+			j++;
+			}
+		B.markCell(max3.cell.i, max3.cell.j);
+		
+		struct max4;
+		max4.cell=fc[0];
+		max4.num=0;
+		for(MNKCell d : fc) {  
+			 if((System.currentTimeMillis()-start)/1000.0 > TIMEOUT*(99.0/100.0)) {
+				 break;
+			 }
+			 if(eval[j].cell!=d) {throw new NewException("hisDeepEval mismatch" );}
+			 
+			eval[j].num=Math.max(deepEval(fc,mc,d,false,false),eval[j].num);
+			
+			if(eval[j].num>max4.num) {
+				max4=eval[j];
+			}
+			
+			j++;
+			}
+		
+		B.unmarkCell();
+		
+		maximum=Math.max(max3.num, max4.num);
+		
+		if(maximum<95) {
+			for(MNKCell d:fc) {
+				if(eval[j].cell!=d) {throw new NewException("generalEval mismatch" );}
+				 
+				eval[j].num=Math.max(generalEval(fc,mc,d,false),eval[j].num);
+			}
+		}
+		
+		}
+		
+		
+		struct maxi;
+		maxi.cell=fc[0];
+		maxi.num=0;
+		for(struct d:eval) {
+			if(d.num>maxi.num) {
+				maxi=d;
+			}
+		}
+		
+		
+		//non so se ci va
+		B.unmarkCell();
+		
+		return maxi.cell;
 		
 			
 				
 			
 			//????????????
-				B.unmarkCell();
+			
 			
 		
 	/*	// Check whether there is a single move loss:
