@@ -33,8 +33,9 @@ public class L0 implements CXPlayer {
 	}
 
 	public void initPlayer(int M, int N, int K,  boolean first, int timeout_in_secs) {
+		int timeout=timeout_in_secs;
 		int max=0;
-		int[] eval= new int[M];
+		int[] eval= new int[N];
 		for(int i=0;i<M;i++) {
 			eval[i]=0;
 		}
@@ -99,12 +100,12 @@ public class L0 implements CXPlayer {
 		}
 	}
 	
-	void deepAnalysis() {
+	void deepAnalysis() {			//to do
 		
 	}
 	
 	int max(int[] eval) {
-		int maxfound=Math.max(eval);
+		int maxfound=Math.max(eval);			//max che ho
 		if(maxfound<0) {
 			//porcodio
 		}
@@ -113,22 +114,22 @@ public class L0 implements CXPlayer {
 	
 	void generalCheck() {
 		int [] column=getAvailableColumns();
-		for(int i=0;i<column.length;i++) {
+		for(int i=0;i<column.length;i++) {		//temporarly random
 		eval[column[i]]= rand.nextInt(100);
 		}
 		
 	}
 	
 	int checkForced(int column, int player) {
-			markColumn(column);
-			int forced =forcedColumn();
+			markColumn(column);					//mark me
+			int forced =forcedColumn(player);			//is forced?
 			if(forced=-2) {
-				return 102;
+				return 102;						//i have 2 ways to win
 			}
-			if(!bool(forced+1)) {
-				checkForced(forced,int(!bool(player)));
+			if(!bool(forced+1)) {				//i am forcing
+				checkForced(forced,int(!bool(player)));	//recursive opposite 
 			}
-			else {
+			else {								//not forced
 				return 0;
 			}
 		}
@@ -140,42 +141,22 @@ public class L0 implements CXPlayer {
 		//repeat
 		//if 2 way/i win return 
 		//if gets to nothing sad return
-		
-		
-		
-		
-		
-		
-		
-		
+	
+		int forcedColumn(int player){
+			int index=-3;
+			int found=0;
+			int[] column=getAvailableColumns();
+		for(int i=0;i<column.length;i++) {
+			if (markColumn(column[i])==WIN2) {
+				found++;
+				index=column[i];
+			}
+		}
+		if(found==0)return -1;
+		if(found>1)return -2;
 		return 0;
 		}
-		for(int i=0;i<column.length||i<2;i++) {
-		markColumn(i);
-		for(int j=0;j<getAvailableColumns().length;j++) {
-		if(markColumn(j)==WINmy) {}
-		return j;
-		}
-		unmarkColumn();
-		if(i==1) {
-			markColumn(0);
-			if(markColumn(1)==WINmy) {}
-			return 1;
-			}
-		return -1;
-		}
-		}
-	}
 		
-		int forcedColumn(){
-		for(int i=0;i<getAvailableColumns().length;i++) {
-			if (markColumn(i)==WIN?opp) {
-				return i;
-			}
-		}
-		return -1;
-		}
-		}
 		//mark each us
 		//check win if win(""104"" and break)
 		//check forced (forced tree if win 102(check accidental opponent win))
