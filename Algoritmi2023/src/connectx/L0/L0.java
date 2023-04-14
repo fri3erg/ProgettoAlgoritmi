@@ -19,6 +19,7 @@
 package connectx.L0;
 
 import connectx.CXPlayer;
+import java.util.Arrays;
 import connectx.CXBoard;
 import java.util.Random;
 
@@ -57,7 +58,6 @@ public class L0 implements CXPlayer {
 		}		
 		}
 		for(int repeat=0;repeat==0;repeat++) {		//if valid
-		repeat=0;
 		max=max(eval);
 		markColumn(max);							//mark the best
 		int [] column=getAvailableColumns();
@@ -66,6 +66,7 @@ public class L0 implements CXPlayer {
 				if(column[i]==max) {				//wins and same column
 					eval[column[i]]=-1;				//dont put that column
 					repeat--;						//try another column
+					break;
 				}
 				else {
 				return column[i];					//if i have to block
@@ -84,12 +85,12 @@ public class L0 implements CXPlayer {
 		}
 		for(int repeat=0;repeat==0;repeat++) {		//if valid
 			max=max(eval);
-			repeat=0;
 			markColumn(max);						//mark the best
 		for(int i=0;i<column.length;i++) {			//for each column
-			if(checkForced(column[i], 1)==102) {	//if they can force 
+			if(checkForced(column[i], 1)==101) {	//if they can force 
 			eval[max]=-1;	
 			repeat--;								//try another column
+			break;
 		}
 		}
 		}
@@ -105,10 +106,11 @@ public class L0 implements CXPlayer {
 	}
 	
 	int max(int[] eval) {
-		int maxfound=Math.max(eval);			//max che ho
+		int maxfound=Arrays.stream(eval).max().getAsInt();;			//max che ho
 		if(maxfound<0) {
 			//porcodio
 		}
+		return maxfound;
 		
 	}
 	
@@ -123,11 +125,22 @@ public class L0 implements CXPlayer {
 	int checkForced(int column, int player) {
 			markColumn(column);					//mark me
 			int forced =forcedColumn(player);			//is forced?
-			if(forced=-2) {
-				return 102;						//i have 2 ways to win
+			if(forced=-2) {						//i have 2 ways to win
+				if(player==0) {
+				return 102;	
+				}
+				else{
+					return 101;
+				}
 			}
-			if(!bool(forced+1)) {				//i am forcing
-				checkForced(forced,int(!bool(player)));	//recursive opposite 
+			if(forced!=-1) {				//i am forcing
+				if(player==0) {
+				player++;
+				}
+				else {
+					player=0;
+				}
+				checkForced(forced,player);	//recursive opposite 
 			}
 			else {								//not forced
 				return 0;
@@ -143,18 +156,22 @@ public class L0 implements CXPlayer {
 		//if gets to nothing sad return
 	
 		int forcedColumn(int player){
-			int index=-3;
+			int index=-1;
 			int found=0;
+			GameState win=WIN1;
+			if(player==1) {
+				win=WIN2;
+			}
 			int[] column=getAvailableColumns();
 		for(int i=0;i<column.length;i++) {
-			if (markColumn(column[i])==WIN2) {
+			if (markColumn(column[i])==win) {
 				found++;
 				index=column[i];
 			}
 		}
 		if(found==0)return -1;
 		if(found>1)return -2;
-		return 0;
+		return index;
 		}
 		
 		//mark each us
