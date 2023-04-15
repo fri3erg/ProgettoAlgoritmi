@@ -21,6 +21,8 @@ package connectx.L0;
 import connectx.CXPlayer;
 import java.util.Arrays;
 import connectx.CXBoard;
+import connectx.CXGameState;
+
 import java.util.Random;
 
 /**
@@ -33,10 +35,15 @@ public class L0 implements CXPlayer {
 	public L0() {
 	}
 
+static int max;
+static int timeout;
+static Integer[] eval;
+static CXGameState mywin;
+static CXGameState hiswin;
 	public void initPlayer(int M, int N, int K,  boolean first, int timeout_in_secs) {
-		int timeout=timeout_in_secs;
-		int max=0;
-		int[] eval= new int[N];
+		timeout=timeout_in_secs;
+		max=0;
+		eval= new Integer[N];
 		for(int i=0;i<M;i++) {
 			eval[i]=0;
 		}
@@ -45,24 +52,24 @@ public class L0 implements CXPlayer {
 	}
 
 	/* Selects a random column */
-	public int selectColumn(CXBoard B) {
+	public int selectColumn(CXBoard b) {
 		
 		//Integer[] L = B.getAvailableColumns();
 		//return L[rand.nextInt(L.length)];
-		if(numOfFreeCells()!=0) {					//if not full
-			if(currentPlayer()==0) { 				//if my turn
-				int [] column=getAvailableColumns();
+		if(b.numOfFreeCells()!=0) {					//if not full
+			if(b.currentPlayer()==0) { 				//if my turn
+				Integer [] column=b.getAvailableColumns();
 		for(int i=0;i<column.length;i++) {			//for each column
-			if(markColumn(column[i])==WIN1) {		//if i win						//not sure
+			if(b.markColumn(column[i])==mywin) {		//if i win						//not sure
 				return column[i];
 		}		
 		}
 		for(int repeat=0;repeat==0;repeat++) {		//if valid
 		max=max(eval);
-		markColumn(max);							//mark the best
-		int [] column=getAvailableColumns();
+		b.markColumn(max);							//mark the best
+		column=b.getAvailableColumns();
 		for(int i=0;i<column.length;i++) {			//for each column
-			if(markColumn(column[i])==WIN2) {		//if he wins										//not sure
+			if(b.markColumn(column[i])==hiswin) {		//if he wins										//not sure
 				if(column[i]==max) {				//wins and same column
 					eval[column[i]]=-1;				//dont put that column
 					repeat--;						//try another column
@@ -77,17 +84,17 @@ public class L0 implements CXPlayer {
 		}
 		}
 
-		int [] column=getAvailableColumns();
+		column=b.getAvailableColumns();
 		for(int i=0;i<column.length;i++) {			//for each column
-		if(checkForced(column[i], 0)==102) {		//check my forced
+		if(checkForced(b,column[i], 0)==102) {		//check my forced
 			return column[i];
 		}
 		}
 		for(int repeat=0;repeat==0;repeat++) {		//if valid
 			max=max(eval);
-			markColumn(max);						//mark the best
+			b.markColumn(max);						//mark the best
 		for(int i=0;i<column.length;i++) {			//for each column
-			if(checkForced(column[i], 1)==101) {	//if they can force 
+			if(checkForced(b,column[i], 1)==101) {	//if they can force 
 			eval[max]=-1;	
 			repeat--;								//try another column
 			break;
@@ -114,18 +121,18 @@ public class L0 implements CXPlayer {
 		
 	}
 	
-	void generalCheck() {
-		int [] column=getAvailableColumns();
+	void generalCheck(CXBoard b) {
+		Integer[] column=b.getAvailableColumns();
 		for(int i=0;i<column.length;i++) {		//temporarly random
 		eval[column[i]]= rand.nextInt(100);
 		}
 		
 	}
 	
-	int checkForced(int column, int player) {
-			markColumn(column);					//mark me
-			int forced =forcedColumn(player);			//is forced?
-			if(forced=-2) {						//i have 2 ways to win
+	int checkForced(CXBoard b,int column, int player) {
+			b.markColumn(column);					//mark me
+			int forced =forcedColumn(b,player);			//is forced?
+			if(forced==-2) {						//i have 2 ways to win
 				if(player==0) {
 				return 102;	
 				}
@@ -140,7 +147,7 @@ public class L0 implements CXPlayer {
 				else {
 					player=0;
 				}
-				checkForced(forced,player);	//recursive opposite 
+				return checkForced(b,forced,player);	//recursive opposite 
 			}
 			else {								//not forced
 				return 0;
@@ -155,16 +162,16 @@ public class L0 implements CXPlayer {
 		//if 2 way/i win return 
 		//if gets to nothing sad return
 	
-		int forcedColumn(int player){
+		int forcedColumn(CXBoard b,int player){
 			int index=-1;
 			int found=0;
-			GameState win=WIN1;
+			CXGameState win=mywin;
 			if(player==1) {
-				win=WIN2;
+				win=hiswin;
 			}
-			int[] column=getAvailableColumns();
+			Integer[] column=b.getAvailableColumns();
 		for(int i=0;i<column.length;i++) {
-			if (markColumn(column[i])==win) {
+			if (b.markColumn(column[i])==win) {
 				found++;
 				index=column[i];
 			}
