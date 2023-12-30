@@ -227,7 +227,7 @@ public class CXBoard {
 	/**
 	 * Undo last move
 	 *
-	 * @throws IllegalStateException If there is no move to undo
+	 * @throws IllegalStateExcepftion If there is no move to undo
 	 */
 	public void unmarkColumn() throws IllegalStateException {
 		if (MC.size() == 0) {

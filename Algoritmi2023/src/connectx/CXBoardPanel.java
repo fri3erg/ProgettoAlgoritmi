@@ -60,7 +60,7 @@ public class CXBoardPanel extends JPanel implements MouseListener, MouseMotionLi
 
 	protected final int WIN_ANIMATION_FRAMES;
 
-	private static final int TIMEOUT = 10;
+	private static final int TIMEOUT = 1000000000; //TODO: CHANGE BACK
 
 	public static final int PLAYER1 = 0; // PLAYER1
 	public static final int PLAYER2 = 1; // PLAYER2
