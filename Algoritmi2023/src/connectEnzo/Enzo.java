@@ -2,6 +2,7 @@ package connectEnzo;
 
 import connectx.*;
 
+import java.util.concurrent.TimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,6 +14,7 @@ public class Enzo implements CXPlayer {
 	private int X;
 	private boolean isFirst;
 	private int timeout;
+	private long start;
 
 	private List<Integer> eval; // array with evaluation
 	private CXGameState myWin;
@@ -26,6 +28,7 @@ public class Enzo implements CXPlayer {
 		this.X = X;
 		this.isFirst = first;
 		this.timeout = timeout_in_secs;
+	    this.start = System.currentTimeMillis();
 		if (first) {
 			this.myWin = CXGameState.WINP1;
 			this.hisWin = CXGameState.WINP2;
@@ -35,6 +38,11 @@ public class Enzo implements CXPlayer {
 		}
 
 	}
+	
+	  private void checkTime() throws TimeoutException {
+		  // Check if the time limit has been reached
+		  if ((System.currentTimeMillis() - start) >= timeout * 995) throw new TimeoutException();
+	  }
 
 	/**
 	 * main function chooses the column to mark
@@ -76,6 +84,10 @@ public class Enzo implements CXPlayer {
 		this.max = 0;
 		this.eval = new ArrayList<>(Collections.nCopies(N, 0));
 		Integer[] column = board.getAvailableColumns();
+		
+	    if (board.numOfMarkedCells() <= 1) {
+	        return N/2; 
+	    }
 
 		Integer temp;
 		temp = this.checkMyWin(board, column);
@@ -256,13 +268,12 @@ public class Enzo implements CXPlayer {
 	 */
 	void generalAnalysis(CXBoard b, Integer[] column) { // temporarly random
 		Random rand = new Random(System.currentTimeMillis());
-		for (Integer col : column) { // for each column that does not lead lo loss
+		for (Integer col : column) { // for each column that does not lead to loss
 			if (this.eval.get(col).equals(-1)) {
 				continue;
 			}
 			this.eval.set(col, rand.nextInt(100));
 		}
-
 	}
 
 	/**
@@ -273,9 +284,92 @@ public class Enzo implements CXPlayer {
 	 * @param column, available columns to check
 	 * @return column that results in win, -1 if not found
 	 */
+	
 	Integer deepAnalysis(CXBoard board, Integer[] column) { // TODO
-		return -1;
+		
+		int bestMove = board.getAvailableColumns()[0], tmp = bestMove, tmpEval, eval;
+	    
+	    try {
+	      // Iterate over depths to perform iterative deepening
+	      for (int d = 1; d <= board.numOfFreeCells(); d++) {
+	        tmpEval = -1;
+	        eval = -1;
+
+	        // Iterate over available columns to evaluate possible moves
+	        for (Integer m : board.getAvailableColumns()) {
+	          
+	          board.markColumn(m); // Try making the move
+	          eval = alphabeta(board, false, -1, 1, d); // Evaluate the resulting board position using alpha-beta pruning
+	          board.unmarkColumn(); // Undo the move
+
+	          // Update the best move if the current move has a higher evaluation
+	          if (eval > tmpEval) {
+	            tmp = m;
+	            tmpEval = eval;
+	          }
+	          
+	        }
+	        // Update the best move at the current depth
+	        bestMove = tmp;
+	      }
+	      
+	    } catch (TimeoutException e) {}
+	    return bestMove;
 	}
+
+	  
+
+	  //MinMax with alphabeta pruning
+	  private int alphabeta(CXBoard board, boolean maximize, int alpha, int beta, int depth) throws TimeoutException {
+	    int eval;
+	    checkTime();
+
+	    if (depth == 1 || isLeaf(board.gameState())) {
+	      // If at the specified depth or a leaf node, evaluate the board position
+	      eval = evaluate(board);
+	    } else if (maximize) {
+	      // maximize
+	      eval = -1;
+	      Integer[] ac = board.getAvailableColumns();
+	      for (Integer c : ac) {
+	    	board.markColumn(c);
+	        // Recursively evaluate the resulting position for the minimizing player
+	        eval = Integer.max(eval, alphabeta(board, false, alpha, beta, depth - 1));
+	        board.unmarkColumn();
+	        alpha = Integer.max(eval, alpha); // Update alpha
+	        if (beta <= alpha) break; // Perform alpha-beta pruning if necessary
+	      }
+	    } else {
+	      // minimize
+	      eval = 1;
+	      Integer[] ac = board.getAvailableColumns();
+	      for (Integer c : ac) {
+	    	board.markColumn(c);
+	        // Recursively evaluate the resulting position for the maximizing player
+	        eval = Integer.min(eval, alphabeta(board, true, alpha, beta, depth - 1));
+	        board.unmarkColumn();
+	        beta = Integer.min(eval, beta); // Update beta
+	        if (beta <= alpha) break; // Perform alpha-beta pruning if necessary
+	      }
+	    }
+	    return eval; 
+	  }
+
+	  private boolean isLeaf(CXGameState s) {
+	    // Check if the given game state is a leaf node (terminal state)
+	    return s == CXGameState.WINP1 || s == CXGameState.WINP2 || s == CXGameState.DRAW;
+	  }
+
+	  private int evaluate(CXBoard board) {
+	    // Evaluate the board position based on the game state
+	    if (board.gameState() == CXGameState.WINP1) {
+	      return 1;
+	    } else if (board.gameState() == CXGameState.WINP2) {
+	      return -1;
+	    } else {
+	      return 0;
+	    }
+	  }
 
 	/**
 	 * checks if there is forcing that results in winCondition
@@ -313,7 +407,7 @@ public class Enzo implements CXPlayer {
 	// check forced (forced win 102, forced loss 101(check accidental opponent win))
 	// general?
 	// deep analysis
-	//deep especially for copycat
+	// deep especially for copycat
 	// notes: BFS sarebbe meglio ma non implementabile quindi prob. DFS per deep
 	// deep: check recursive (if follows best moves?)
 	// all in time
