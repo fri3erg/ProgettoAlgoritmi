@@ -9,6 +9,14 @@ import java.util.List;
 import java.util.Random;
 
 public class Enzo implements CXPlayer {
+	final int CENTER = 20;
+	final int NEAR_CENTER = 5;
+	final int EMPTY_1 = 10;
+	final int EMPTY_0 = 5;
+	final int HEIGHT_1 = 10;
+	final int MARKED = 10;
+	final int MAX_H = -10;
+
 	private int M;
 	private int N;
 	private int X;
@@ -50,6 +58,7 @@ public class Enzo implements CXPlayer {
 	 * @param board , board state
 	 * @return column chose
 	 */
+	  
 	@Override
 	public int selectColumn(CXBoard board) {
 		/*
@@ -78,6 +87,7 @@ public class Enzo implements CXPlayer {
 
 		*/
 
+		//non fargliene mettere nemmeno 3 di fila
 		
 		long start = System.nanoTime();		//measure time,to remove
 
@@ -112,10 +122,14 @@ public class Enzo implements CXPlayer {
 		this.generalAnalysis(board, column);
 
 		// deep
+		/*
 		temp = this.deepAnalysis(board.copy(), column);
 		if (temp != -1) {
 			return temp;
 		}
+		*/
+		
+		
 		this.max = Collections.max(this.eval);
 		Integer maxColumn = this.eval.indexOf(this.max);
 		if (this.max < 0) {
@@ -266,14 +280,124 @@ public class Enzo implements CXPlayer {
 	 * @param board,  board to mark, need to be copied for safety
 	 * @param column, available columns to check
 	 */
-	void generalAnalysis(CXBoard b, Integer[] column) { // temporarly random
-		Random rand = new Random(System.currentTimeMillis());
-		for (Integer col : column) { // for each column that does not lead to loss
+		
+	//problema: le colonne tutte piene non vengono più considerate.
+	//Se la colonna non c'è allora la consideriamo come non free
+	
+	void generalAnalysis(CXBoard board, Integer[] column) {
+		int tempVal = 0;
+		for (Integer col : column) { // for each free column
 			if (this.eval.get(col).equals(-1)) {
 				continue;
 			}
-			this.eval.set(col, rand.nextInt(100));
+			
+			//centrale
+			if(col == N/2) {
+				tempVal+=CENTER;
+			}
+			//vicina al centro
+			else if(Math.abs(col - N/2) == 1) {
+				tempVal+=NEAR_CENTER;
+			}
+
+			//colonna vuota e distanza da altre costruzioni di esattamente 1 colonna vuota
+			//caso 1
+			if(col+2 <= column.length-1 && col-2 >= 0 ) { 
+
+				if(board.cellState(0, col) == CXCellState.FREE && ((board.cellState(0, col+1) == CXCellState.FREE &&  board.cellState(0, col+2) != CXCellState.FREE) || (board.cellState(0, col-1) == CXCellState.FREE && board.cellState(0, col-2) != CXCellState.FREE))){
+					tempVal+=EMPTY_1;
+				}
+			}
+			//caso 2
+			else if(col+2 <= column.length-1) {
+
+				if(board.cellState(0, col) == CXCellState.FREE && (board.cellState(0, col+1) == CXCellState.FREE &&  board.cellState(0, col+2) != CXCellState.FREE)){
+					tempVal+=EMPTY_1;
+				}
+			}
+			//caso 3
+			else if(col-2 >= 0) {
+				if(board.cellState(0, col) == CXCellState.FREE && (board.cellState(0, col-1) == CXCellState.FREE && board.cellState(0, col-2) != CXCellState.FREE)){
+					tempVal+=EMPTY_1;
+				}
+			}
+			
+			//colonna vuota e attaccata ad altre
+			//caso 1
+			if(col+1 <= column.length-1 && col-1 >= 0 ) { 
+				if(board.cellState(0, col) == CXCellState.FREE && (board.cellState(0, col+1) != CXCellState.FREE || board.cellState(0, col-1) != CXCellState.FREE)){
+					tempVal+=EMPTY_0;
+				}
+			}
+			//caso 2
+			else if(col+1 <= column.length-1) {
+				if(board.cellState(0, col) == CXCellState.FREE && board.cellState(0, col+1) != CXCellState.FREE){
+					tempVal+=EMPTY_0;
+				}
+			}
+			//caso 3
+			else if(col-1 >= 0) {
+				if(board.cellState(0, col) == CXCellState.FREE && board.cellState(0, col-1) != CXCellState.FREE){
+					tempVal+=EMPTY_0;
+				}
+			}
+			
+			//riga >1
+			if(board.cellState(0, col) != CXCellState.FREE) {
+				tempVal+=HEIGHT_1;
+			}
+						
+			//altezza di questa colonna
+			int h = 0;
+			
+			for (int i = 0; i < M; i++) {
+				if(board.cellState(i, col) == CXCellState.FREE) {
+					h = i;
+					break;
+				}
+			}
+			
+			if(h == M-1) {
+				tempVal+=MAX_H;
+			}
+			
+			//la riga della colonna è quella dove abbiamo più pedine
+			//altezze migliori
+			int counter = 0;
+			int prec_counter = 0;
+			int max_row = 0;
+			
+			for (int i = 0; i < M; i++) { //righe / altezza
+				for(int j = 0; j < N; j++) { //colonne
+					if(board.cellState(i, j) == CXCellState.P1){
+						counter++;
+					}
+				}
+				if(counter > prec_counter) {
+					max_row = i;
+				}
+			}
+			
+			//pair.getKey()
+			//pair.getValue()
+			
+			// if (h = indice di counter massimo)
+			//h c'è
+			//abbiamo indice massimo
+			//paragonare h con indice e guardare se valore di counter di quell'indice è uguale a max
+			
+			//l'altezza che stiamo valutando (h) è l'altezza con numero massimo di nostre pedine?
+			for(int i = 0; i < M; i++) {
+				if(h == max_row) {
+					tempVal+=MARKED;
+				}
+			}
+			
+			System.out.println("valore colonna " + col + ": " + tempVal);
+			this.eval.set(col, tempVal);
+			tempVal = 0;
 		}
+		
 	}
 
 	/**
@@ -285,7 +409,7 @@ public class Enzo implements CXPlayer {
 	 * @return column that results in win, -1 if not found
 	 */
 	
-	Integer deepAnalysis(CXBoard board, Integer[] column) { // TODO
+	Integer deepAnalysis(CXBoard board, Integer[] column) {
 		
 		int bestMove = board.getAvailableColumns()[0], tmp = bestMove, tmpEval, eval;
 	    
