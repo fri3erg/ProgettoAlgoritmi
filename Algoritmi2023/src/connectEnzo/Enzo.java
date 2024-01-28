@@ -122,12 +122,11 @@ public class Enzo implements CXPlayer {
 		this.generalAnalysis(board, column);
 
 		// deep
-		/*
-		temp = this.deepAnalysis(board.copy(), column);
+		temp = this.deepAnalysis(board.copy());
 		if (temp != -1) {
 			return temp;
 		}
-		*/
+
 		
 		
 		this.max = Collections.max(this.eval);
@@ -409,8 +408,10 @@ public class Enzo implements CXPlayer {
 	 * @return column that results in win, -1 if not found
 	 */
 	
-	Integer deepAnalysis(CXBoard board, Integer[] column) {
+	Integer deepAnalysis(CXBoard board) {
 		
+		System.out.println("deep");
+
 		int bestMove = board.getAvailableColumns()[0], tmp = bestMove, tmpEval, eval;
 	    
 	    try {
