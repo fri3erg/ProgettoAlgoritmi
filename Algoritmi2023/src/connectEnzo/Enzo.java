@@ -112,10 +112,10 @@ public class Enzo implements CXPlayer {
 		this.generalAnalysis(board, column);
 
 		// deep
-		temp = this.deepAnalysis(board.copy(), column);
-		if (temp != -1) {
-			return temp;
-		}
+		//temp = this.deepAnalysis(board.copy(), column);
+		//if (temp != -1) {
+		//	return temp;
+		//}
 		this.max = Collections.max(this.eval);
 		Integer maxColumn = this.eval.indexOf(this.max);
 		if (this.max < 0) {
@@ -204,6 +204,7 @@ public class Enzo implements CXPlayer {
 					continue;
 				}
 				if (board.markColumn(col2).equals(winCondition)) {
+					board.unmarkColumn();
 					board.unmarkColumn();
 					return col2;
 				}
@@ -388,6 +389,7 @@ public class Enzo implements CXPlayer {
 		if (!forced.equals(-1)) {
 			if (board.markColumn(forced) != CXGameState.OPEN) {
 				board.unmarkColumn();
+				board.unmarkColumn();
 				return -1;
 			}
 			Integer[] columns = board.getAvailableColumns();
@@ -395,11 +397,14 @@ public class Enzo implements CXPlayer {
 			for (Integer col : columns) {
 				force = this.checkForced(board, col, winCondition);// recursive
 				if (!force.equals(-1)) {
+					board.unmarkColumn();
+					board.unmarkColumn();
 					return force;
 				}
 			}
 			board.unmarkColumn();
 		}
+			board.unmarkColumn();
 		return -1;
 	}
 
