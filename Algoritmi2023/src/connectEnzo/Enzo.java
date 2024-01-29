@@ -112,10 +112,10 @@ public class Enzo implements CXPlayer {
 		this.generalAnalysis(board, column);
 
 		// deep
-		//temp = this.deepAnalysis(board.copy(), column);
-		//if (temp != -1) {
-		//	return temp;
-		//}
+		temp = this.deepAnalysis(board.copy(), column);
+		if (temp != -1) {
+			return temp;
+		}
 		this.max = Collections.max(this.eval);
 		Integer maxColumn = this.eval.indexOf(this.max);
 		if (this.max < 0) {
