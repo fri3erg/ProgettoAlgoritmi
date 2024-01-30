@@ -11,9 +11,9 @@ import java.util.Random;
 public class Enzo implements CXPlayer {
 	final int CENTER = 20;
 	final int NEAR_CENTER = 5;
-	final int EMPTY_1 = 5;
+	final int EMPTY_1 = 10;
 	final int EMPTY_0 = 5;
-	final int HEIGHT_1 = 10;
+	final int HEIGHT_1 = 15;
 	final int MARKED = 7;
 
 	private int M;
@@ -121,7 +121,7 @@ public class Enzo implements CXPlayer {
 		this.generalAnalysis(board, column);
 
 		// deep
-		/*
+/*
 		temp = this.deepAnalysis(board.copy());
 		if (temp != -1) {
 			return temp;
@@ -298,19 +298,25 @@ public class Enzo implements CXPlayer {
 			
 			//altezza di questa colonna			
 			for (int i = 0; i < M; i++) {
-				if(board.cellState(i, col) == CXCellState.FREE) {
-					h = M - i - 1;
+				if(board.cellState(i, col) != CXCellState.FREE) {
+					h = M - i;
+					break;
 				}
 			}
 			
-			//centrale
-			if(col == N/2 && h != M-1) {
-				tempVal+=CENTER;
+			System.out.println("altezza " + h);
+			
+			if(N%2 != 0) {
+				//centrale
+				if(col == N/2 && h != M-1) {
+					System.out.println("colonna " + col);
+					tempVal+=CENTER;
+				}
+				//vicina al centro
+				else if(Math.abs(col - N/2) == 1 && h != M-1) {
+					tempVal+=NEAR_CENTER;
+				}	
 			}
-			//vicina al centro
-			else if(Math.abs(col - N/2) == 1 && h != M-1) {
-				tempVal+=NEAR_CENTER;
-			}			
 
 			//colonna vuota e distanza da altre costruzioni di esattamente 1 colonna vuota
 			//caso 1
