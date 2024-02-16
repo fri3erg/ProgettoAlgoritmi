@@ -22,6 +22,7 @@ public class Enzo implements CXPlayer {
 	private boolean isFirst;
 	private int timeout;
 	private long start;
+    private static int MAX = 100, MIN = 0;
 
 	private List<Integer> eval; // array with evaluation
 	private CXGameState myWin;
@@ -46,10 +47,46 @@ public class Enzo implements CXPlayer {
 
 	}
 	
-	  private void checkTime() throws TimeoutException {
-		  // Check if the time limit has been reached
-		  if ((System.currentTimeMillis() - start) >= timeout * 995) throw new TimeoutException();
-	  }
+	   private void checktime() throws TimeoutException {
+	        if ((System.currentTimeMillis() - start) / 1000.0 >= timeout * (99.0 / 100.0))
+	            throw new TimeoutException();
+	    }
+	   
+	    private CXCellState opponentState() {
+	        if (isFirst) {
+	            return CXCellState.P2;
+	        } else {
+	            return CXCellState.P1;
+	        }
+	    }
+
+	    // Antonio's state
+	    private CXCellState myState() {
+	        if (isFirst) {
+	            return CXCellState.P1;
+	        } else {
+	            return CXCellState.P2;
+	        }
+	    }
+	    
+	    public Integer[] sortFromMiddle(Integer[] L) {
+	        Integer[] V = new Integer[L.length];
+	        int cont = 0;
+	        for (int i = 0; (i <= L.length / 2); i++) {
+	            V[cont] = L[L.length / 2 + i];
+	            cont++;
+	            if (i != 0) {
+	                V[cont] = L[L.length / 2 - i];
+	                cont++;
+	            }
+
+	            if ((i + 1 == L.length / 2) && ((L.length % 2) == 0)) {
+	                V[cont] = L[0];
+	                break;
+	            }
+	        }
+	        return V;
+	    }
 
 	/**
 	 * main function chooses the column to mark
@@ -87,7 +124,7 @@ public class Enzo implements CXPlayer {
 		*/
 
 		//non fargliene mettere nemmeno 3 di fila
-		
+		Integer maxColumn = 0;
 		long start = System.nanoTime();		//measure time,to remove
 
 		this.max = 0;
@@ -97,6 +134,8 @@ public class Enzo implements CXPlayer {
 	    if (board.numOfMarkedCells() <= 1) {
 	        return N/2; 
 	    }
+	    
+	    try {
 
 		Integer temp;
 		temp = this.checkMyWin(board, column);
@@ -117,27 +156,53 @@ public class Enzo implements CXPlayer {
 			return temp;
 		}
 
+		if(column.length > N/2) {
 		// general analysis
 		this.generalAnalysis(board, column);
-
-		// deep
-/*
-		temp = this.deepAnalysis(board.copy());
-		if (temp != -1) {
-			return temp;
 		}
-*/
-		
+		else {
+			//DEEPSEARCH
+	        int depth;
+	        if ((board.M * board.N) < 100) {
+	            depth = 7;
+	        } else if ((board.M * board.N) < 350) {
+	            depth = 3;
+	        } else {
+	            depth = 1;
+	        }
+			
+	        int outcome = Integer.MIN_VALUE, maxOutcome = outcome;
+	        Integer[] S = sortFromMiddle(column);
+
+	        
+			for (int colIt : S) {
+	            checktime();
+	            CXGameState stateAB = board.markColumn(colIt); // mark move to value
+	            outcome = AlphaBetaPruning(board, false, Integer.MIN_VALUE, Integer.MAX_VALUE,
+	                    depth, stateAB);
+	            board.unmarkColumn();
+	            if (outcome > maxOutcome) { // comparison between the ABP result and current maximization value
+	                maxOutcome = outcome;
+	                maxColumn = colIt;
+	            }
+	        }
+		}
+	
 		
 		this.max = Collections.max(this.eval);
-		Integer maxColumn = this.eval.indexOf(this.max);
+		maxColumn = this.eval.indexOf(this.max);
 		if (this.max < 0) {
 			maxColumn = column[0];
 		}
+		
 
 		 long end = System.nanoTime();
 		 System.out.println("last move time in ns: "+ (end-start));
 		return maxColumn;
+	    } catch (TimeoutException e) {
+	    	 System.err.println("Timeout!!! Last computed column selected");
+	         return maxColumn;
+	    }
 	}
 
 	/**
@@ -407,93 +472,187 @@ public class Enzo implements CXPlayer {
 	 * @return column that results in win, -1 if not found
 	 */
 	
-	Integer deepAnalysis(CXBoard board) {
-		
-		System.out.println("deep");
+	public int AlphaBetaPruning(CXBoard B, boolean playerAntonio, int alpha, int beta, int depth, CXGameState stateAB) {
+        int eval = 0;
+        try {
+            checktime();
+            if (!stateAB.equals(CXGameState.OPEN) || (depth == 0)) {
+                return evaluate(stateAB, B);
+            } else if (playerAntonio) { // MAX player
+                eval = Integer.MIN_VALUE;
+                Integer[] cols = B.getAvailableColumns();
+                for (int c : cols) {
+                    CXGameState state = B.markColumn(c);
+                    eval = Math.max(eval, AlphaBetaPruning(B, !playerAntonio, alpha, beta, depth - 1, state));
+                    alpha = Math.max(eval, alpha);
+                    B.unmarkColumn();
+                    if (beta <= alpha) { // β cutoff
+                        break;
+                    }
+                }
+                return eval;
+            } else {// MIN player
+                eval = Integer.MAX_VALUE;
+                Integer[] cols = B.getAvailableColumns();
+                for (int c : cols) {
+                    CXGameState state = B.markColumn(c);
+                    eval = Math.min(eval, AlphaBetaPruning(B, !playerAntonio, alpha, beta, depth - 1, state));
+                    beta = Math.min(eval, beta);
+                    B.unmarkColumn();
+                    if (beta <= alpha) { // α cutoff
+                        break;
+                    }
+                }
+                return eval;
+            }
+        } catch (TimeoutException e) {
+            // System.err.println("Timeout!!! Last computed column selected");
+            return eval;
+        }
+    }
 
-		int bestMove = board.getAvailableColumns()[0], tmp = bestMove, tmpEval, eval;
-	    
-	    try {
-	      // Iterate over depths to perform iterative deepening
-	      for (int d = 1; d <= board.numOfFreeCells(); d++) {
-	        tmpEval = -1;
-	        eval = -1;
+    public int evaluate(CXGameState state, CXBoard B) {
+        if (state == myWin) { // Antonio wins
+            return MAX;
+        } else if (state == hisWin) { // Antonio loses
+            return MIN;
+        } else if (state == CXGameState.DRAW) { // Draw
+            return 0;
+        } else { // max depth reached
+            int maxd = evalMaxDepth(B);
+            return maxd;
+        }
+    }
+    
+    // total evaluation ABPruning base case
+    public int evalMaxDepth(CXBoard B) {
+        CXCell move = B.getLastMove();
+        return evalVertical(B, move) + evalHorizontal(B, move) + evalDiagonal(B, move) + evalAntiDiagonal(B, move);
+    }
+    
 
-	        // Iterate over available columns to evaluate possible moves
-	        for (Integer m : board.getAvailableColumns()) {
-	          
-	          board.markColumn(m); // Try making the move
-	          eval = alphabeta(board, false, -1, 1, d); // Evaluate the resulting board position using alpha-beta pruning
-	          board.unmarkColumn(); // Undo the move
+    public int evalVertical(CXBoard B, CXCell move) {
+        int cont;
+        for (cont = 1; (move.i - cont) >= 0; cont++) {
+            if (B.cellState((move.i - cont), move.j) == opponentState()) {
+                cont++;
+                break;
+            }
+        }
+        // control if it's possible to win upwards
+        if ((B.M - move.i) + cont - 1 < B.X) {
+            return 0;
+        }
 
-	          // Update the best move if the current move has a higher evaluation
-	          if (eval > tmpEval) {
-	            tmp = m;
-	            tmpEval = eval;
-	          }
-	          
-	        }
-	        // Update the best move at the current depth
-	        bestMove = tmp;
-	      }
-	      
-	    } catch (TimeoutException e) {}
-	    return bestMove;
-	}
+        return cont = cont - 1;
+    }
 
-	  
+    public int evalHorizontal(CXBoard B, CXCell move) {
+        int l, r, tot; // counters
+        boolean l_bound = true, r_bound = true; // variables used to control the presence of opponent's disks at the
+                                                // boundaries of Antonio's consecutives disks
 
-	  //MinMax with alphabeta pruning
-	  private int alphabeta(CXBoard board, boolean maximize, int alpha, int beta, int depth) throws TimeoutException {
-	    int eval;
-	    checkTime();
+        // count to the left
+        for (l = 1; (move.j - l) >= 0; l++) {
+            if (B.cellState(move.i, (move.j - l)) != myState()) {
+                l_bound = (B.cellState(move.i, (move.j - l)) == opponentState());
+                l++;
+                break;
+            }
+        }
+        l = l - 1;
 
-	    if (depth == 1 || isLeaf(board.gameState())) {
-	      // If at the specified depth or a leaf node, evaluate the board position
-	      eval = evaluate(board);
-	    } else if (maximize) {
-	      // maximize
-	      eval = -1;
-	      Integer[] ac = board.getAvailableColumns();
-	      for (Integer c : ac) {
-	    	board.markColumn(c);
-	        // Recursively evaluate the resulting position for the minimizing player
-	        eval = Integer.max(eval, alphabeta(board, false, alpha, beta, depth - 1));
-	        board.unmarkColumn();
-	        alpha = Integer.max(eval, alpha); // Update alpha
-	        if (beta <= alpha) break; // Perform alpha-beta pruning if necessary
-	      }
-	    } else {
-	      // minimize
-	      eval = 1;
-	      Integer[] ac = board.getAvailableColumns();
-	      for (Integer c : ac) {
-	    	board.markColumn(c);
-	        // Recursively evaluate the resulting position for the maximizing player
-	        eval = Integer.min(eval, alphabeta(board, true, alpha, beta, depth - 1));
-	        board.unmarkColumn();
-	        beta = Integer.min(eval, beta); // Update beta
-	        if (beta <= alpha) break; // Perform alpha-beta pruning if necessary
-	      }
-	    }
-	    return eval; 
-	  }
+        // count to the right
+        for (r = 1; (move.j + r) < B.N; r++) {
+            if (B.cellState(move.i, (move.j + r)) != myState()) {
+                r_bound = (B.cellState(move.i, (move.j + r)) == opponentState());
+                r++;
+                break;
+            }
+        }
+        r = r - 1;
 
-	  private boolean isLeaf(CXGameState s) {
-	    // Check if the given game state is a leaf node (terminal state)
-	    return s == CXGameState.WINP1 || s == CXGameState.WINP2 || s == CXGameState.DRAW;
-	  }
+        // if Antonio is blocked on the right and on the left, the move has no value
+        if (r_bound && l_bound) {
+            tot = 0;
+        } else {
+            tot = r + l + 1;
+        }
+        return tot;
+    }
 
-	  private int evaluate(CXBoard board) {
-	    // Evaluate the board position based on the game state
-	    if (board.gameState() == CXGameState.WINP1) {
-	      return 1;
-	    } else if (board.gameState() == CXGameState.WINP2) {
-	      return -1;
-	    } else {
-	      return 0;
-	    }
-	  }
+    public int evalDiagonal(CXBoard B, CXCell move) {
+        // diagonal control
+        int l_down, r_up, tot; // left, right, tot counters
+        boolean l_down_bound = true, r_up_bound = true; // variables used to control the presence of opponent's disks at
+                                                        // the boundaries of Antonio's consecutives disks
+
+        // count downwards to the left
+        for (l_down = 1; (((move.i - l_down) >= 0) && ((move.j - l_down) >= 0)); l_down++) {
+            if (B.cellState((move.i - l_down), (move.j - l_down)) != myState()) {
+                l_down_bound = (B.cellState((move.i - l_down), (move.j - l_down)) == opponentState());
+                l_down++;
+                break;
+            }
+        }
+        l_down = l_down - 1;
+
+        // count upwards to the right
+        for (r_up = 1; (((move.i + r_up) < B.M) && ((move.j + r_up) < B.N)); r_up++) {
+            if (B.cellState((move.i + r_up), (move.j + r_up)) != myState()) {
+                r_up_bound = (B.cellState((move.i + r_up), (move.j + r_up)) == opponentState());
+                r_up++;
+                break;
+            }
+        }
+        r_up = r_up - 1;
+
+        // if Antonio is blocked on the right and on the left, the move has no value
+        // (diagonally)
+        if (r_up_bound && l_down_bound) {
+            tot = 0;
+        } else {
+            tot = r_up + l_down;
+        }
+
+        return tot;
+    }
+
+    public int evalAntiDiagonal(CXBoard B, CXCell move) {
+        // anti-diagonal control
+        int l_up, r_down, tot; // left, right, tot counters
+        boolean l_up_bound = true, r_down_bound = true; // variables used to control the presence of opponent's disks at
+                                                        // the boundaries of Antonio's consecutives disks
+
+        // count downwards to the right
+        for (r_down = 1; (((move.i - r_down) >= 0) && ((move.j + r_down) < B.N)); r_down++) {
+            if (B.cellState((move.i - r_down), (move.j + r_down)) != myState()) {
+                r_down_bound = (B.cellState((move.i - r_down), (move.j + r_down)) == opponentState());
+                r_down++;
+                break;
+            }
+        }
+        r_down = r_down - 1;
+
+        // count upwards to the left
+        for (l_up = 1; (((move.i + l_up) < B.M) && ((move.j - l_up) >= 0)); l_up++) {
+            if (B.cellState((move.i + l_up), (move.j - l_up)) != myState()) {
+                l_up_bound = (B.cellState((move.i + l_up), (move.j - l_up)) == opponentState());
+                l_up++;
+                break;
+            }
+        }
+        l_up = l_up - 1;
+
+        // if Antonio is blocked on the right and on the left, the move has no value
+        // (anti-diagonally)
+        if (l_up_bound && r_down_bound) {
+            tot = 0;
+        } else {
+            tot = l_up + r_down;
+        }
+        return tot;
+    }
 
 	/**
 	 * checks if there is forcing that results in winCondition
