@@ -1,26 +1,36 @@
-# ProgettoAlgoritmi
-Algoritmi
-Known Issues: quando controlli vittoria immediata avversaria(103) o forzare(101) stiamo guardando una board senza ancora il nostro segno, che va bene se stiamo parlando di vittoria immediata(103) ma con il forcing tecnicamente no(non è la stessa board)
+# Progetto Forza 4 AI
 
-non guarda diverse mosse avanti, soprattutto sopra l'ultimo messo
+Questo progetto implementa un algoritmo incompleto per giocare a **Forza 4** (conosciuto anche come Connect Four), utilizzando un approccio basato sull'**albero di mosse forzate**. L'obiettivo è sviluppare un'intelligenza artificiale in grado di prendere decisioni strategiche per vincere contro l'avversario.
 
-attenzione a non vincere per sbaglio
+---
 
-		//check win if win(""104"" and break)
-  		//check if lost( mark above is his win) 103
-    	// decide if above is separate or integrated
-		//check forced (forced tree if win 102(check accidental opponent win))
-  		//for each mark
-  		//check his forced 101
-		//general? 0-100
-		//deep analysis
-		//notes: BFS sarebbe meglio ma non implementabile quindi prob. DFS per deep
-		//deep: check recursive (if follows best moves?)
-  		//does general only look first move?
-		//all in time
-  		//use all of time on general?
-		//max every time(time safety) or at the end (time efficient)
-		//general cares of?? closeness??center??
-		//hard coded for beginning???
-		//unmark faster than copy
-il canny aveva anche detto qualcosa su che hanno usato hashmap, da guardare 
+## Stato del Progetto e Funzionalità Attuali
+
+L'algoritmo è attualmente in fase di sviluppo e presenta le seguenti aree chiave:
+
+* **Valutazione delle Mosse:** L'AI valuta le possibili mosse basandosi su vari criteri, tra cui:
+  * **Vittoria Immediata (Codice 104):** Identifica e gioca mosse che portano a una vittoria immediata.
+  * **Sconfitta Immediata (Codice 103):** Controlla se la mossa dell'avversario può portare a una sua vittoria immediata, permettendo all'AI di bloccarla.
+  * **Mosse Forzate (Codice 101/102):** Analizza le sequenze di mosse che possono forzare una vittoria (o impedire una sconfitta) entro un numero limitato di turni.
+
+---
+
+## Known Issues e Prossimi Sviluppi
+
+Il progetto presenta alcune **problematiche note** e aree su cui si concentreranno i prossimi sviluppi:
+
+* **Logica di Valutazione delle Mosse Forzate:** Attualmente, la logica per la "vittoria immediata avversaria" (103) e le "mosse forzate" (101) non distingue adeguatamente se la board analizzata include o meno il segno del giocatore corrente. Per le mosse forzate (101), la board analizzata tecnicamente dovrebbe essere quella *dopo* la nostra mossa, non prima.
+* **Analisi Profonda dell'Albero di Gioco:** L'algoritmo non esamina ancora sufficientemente in profondità l'albero delle mosse, specialmente per le configurazioni che si estendono oltre la posizione dell'ultimo pezzo inserito.
+* **Prevenzione di Vittorie Accidentali:** È necessario implementare meccanismi robusti per assicurarsi che l'AI non faccia mosse che, involontariamente, portino alla vittoria dell'avversario.
+* **Strategie di Ricerca:**
+  * Si valuta l'implementazione di una ricerca in profondità (DFS) per l'analisi avanzata delle mosse, data la complessità di una ricerca in ampiezza (BFS) per questo contesto.
+  * Sarà importante determinare se l'analisi "generale" delle mosse si concentrerà solo sulla prima mossa o se esaminerà sequenze più complesse.
+* **Gestione del Tempo:** Si definiranno strategie per l'allocazione del tempo di calcolo, bilanciando l'analisi approfondita con la reattività dell'AI.
+* **Ottimizzazione delle Operazioni:** Valutare se "smarcare" i nodi è più efficiente che copiare l'intera board per ogni simulazione.
+* **Hashmap per la Memorizzazione:** Come suggerito, l'uso di Hashmap per memorizzare stati della board già analizzati potrebbe migliorare significativamente le performance, evitando ricalcoli inutili.
+
+---
+
+## Contributi e Contatti
+
+Questo è un progetto incompleto da riprendere in futuro.
